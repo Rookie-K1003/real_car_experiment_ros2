@@ -1,0 +1,105 @@
+/**:
+  ros__parameters:
+    ## paramaters for control on real vehicle or prescan simulation
+    # 0代表Prescan仿真,1代表实车
+    /control/mode: 1
+
+    ## paramaters for path
+    # 0代表闭合路径;1代表非闭合路径
+    /control/pathtype: 1
+    # 最大曲率半径,大于该值认为道路为直路,单位米
+    /control/Rmax: 500.0
+
+    ## paramaters for vehicle
+    # 传动转向比(方向盘角度与车轮转角比例),AGV为1,乘用车在15左右
+    /control/turn_ratio: 16.0
+    # 车轮(方向盘)最大转角,单位度
+    /control/max_turn_angle: 700.0
+    # 车辆中心与车辆前轴中心的距离,单位米
+    /calibration/center2frontaxis: 1.25
+    # 车辆中心与车辆后轴中心的距离,单位米
+    /control/center2rearaxis: 0.9
+
+    ## paramaters for INS/GPS installation error
+    # 组合导航在车辆坐标系下的x轴坐标,单位米
+    /calibration/insgps_x: 0.0
+    # 组合导航在车辆坐标系下的y轴坐标,单位米
+    /calibration/insgps_y: 0.0 
+
+    ## paramaters for control model
+    # -1代表左转为负数;1代表左转为正数
+    /control/turnleft_ispositive: 1
+    # 预瞄时间,单位秒
+    /control/preview_time: 0.5
+    # 最小基础预瞄距离,单位米
+    /control/basic_prelength_min: 1.0
+    # 最大基础预瞄距离,单位米
+    /control/basic_prelength_max: 4.0
+    # 预瞄模型比例
+    /control/lamda_preview: 0.5
+    # Stanley模型比例
+    /control/lamda_stanley: 0.5
+    # Stanley模型中距离偏差比例参数
+    /control/k_stanley: 0.5
+    # Stanley模型中防止速度为零分母过大参数
+    /control/k_soft: 1.0
+
+    # 横向控制PID参数
+    /control/lateral/kp: 2.0
+    /control/lateral/ki: 0.0
+    /control/lateral/kd: -1.0
+
+    # 纵向控制PID参数
+    /control/acceleration/kp: 0.6
+    /control/acceleration/ki: 0.0
+    /control/acceleration/kd: 0.0
+
+    /control/deceleration/kp: 0.2
+    /control/deceleration/ki: 0.0
+    /control/deceleration/kd: 0.0
+
+    # ACC控制参数
+    /control/velocity/kp: 0.35
+    /control/velocity/ki: 0.0
+    /control/velocity/kd: 0.0
+    /control/acc_obj_vel_kp: 1
+    /control/acc_obj_dis_kp: 0.35
+    /control/desired_dis: 13
+
+    # 纵向控制直线最大期望速度
+    /control/max_speed: 7.0
+    # 速度上限限制
+    /control/speed/limit: 3.0
+
+    # 车轮(方向盘)转角速度限制,单位deg/s
+    /control/yawrate_limit: 1000
+    # 系统延迟时间,从找到最近点到执行机构执行命令,单位秒
+    /control/sys_delay: 0.1 #0.5
+
+    # 开始停车的距离,单位米
+    /control/start2stop_dist: 5
+
+    # 精准停车的车速
+    /control/tp_speed: 0.1
+    # 精准停车允许的最大误差距离（车辆y纵向）
+    /control/park_err_tolerance: 0.05
+
+    ## paramaters for saveroutepoint
+    # 采点间距,单位米
+    /map/equal_length: 0.1
+
+    ## paramaters for gps2xy
+    # 原点的纬度   
+    /map/latitude:  31.029311 #31.0296243 # 31.0279377
+    # 原点的经度
+    /map/longitude: 121.442124 #121.4401156 # 121.4200409
+    # 原点的高度
+    /map/height: 15.67 # 16.382
+
+
+    ## Refline stop
+    /control/refline_stop: 0
+
+    #path choose
+    /control/track_path: /real_route_data_11to22.bin
+    /control/track_speed_factor: 0.9
