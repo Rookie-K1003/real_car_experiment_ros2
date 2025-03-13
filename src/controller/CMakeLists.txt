@@ -49,6 +49,7 @@ find_package(ament_index_cpp REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(OsqpEigen REQUIRED)
 find_package(ecl_geometry REQUIRED) # 3.11补充,path_adapter用
+find_package(osqp REQUIRED)
 
 # 添加子目录
 add_subdirectory(src/common)

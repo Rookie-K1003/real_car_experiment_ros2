@@ -16,9 +16,9 @@ int main(int argc, char *argv[])
   RCLCPP_INFO(rclcpp::get_logger("controller_process_main"), "controller start");
 
   auto node = std::make_shared<Controller::ControllerProcess>();
-  if(!node->MainLoop())
+  if(!node->MainThread())
   {
-    RCLCPP_ERROR(rclcpp::get_logger("controller_process_main"), "controller failed!");
+    RCLCPP_ERROR(rclcpp::get_logger("controller_process_main"), "controller stop!");
     rclcpp::shutdown();
     return 1;
   }

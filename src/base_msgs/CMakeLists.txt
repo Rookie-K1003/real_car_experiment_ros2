@@ -42,6 +42,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/LocalTrajectory.msg"
   "msg/ObsInfo.msg"
   "msg/PlotInfo.msg"
+  "msg/VehicleStateMPC.msg"
 
   DEPENDENCIES 
   visualization_msgs

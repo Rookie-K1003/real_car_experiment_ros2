@@ -34,12 +34,36 @@ namespace Controller
 
     }
 
-    bool ControllerProcess::MainLoop()
+    bool ControllerProcess::MainThread()
     {
         // 进入控制主流程
         RCLCPP_INFO(this->get_logger(), "ControllerProcess MainLoop Start!");
 
-        return true;
+        rclcpp::Rate rate(10.0); 
+        // 循环
+        while (rclcpp::ok())
+        {
+            ControlCycleCallback();
+            rate.sleep();
+        }
+
+        return false;
+    }
+
+    void ControllerProcess::ControlCycleCallback()
+    {
+        // ~ step1: 判断使用哪种控制器
+
+        // ~ step2: 控制器运行(先以MPC控制器为例)
+        if (!mpc_controller_.RunOnce()) {
+            RCLCPP_ERROR(this->get_logger(), "MPC controller failed");
+            return;
+        }
+
+        // ~ step3: 发布数据
+
+        // ~ step4: 控制器状态更新
+        
     }
 
     // 暂时先不用

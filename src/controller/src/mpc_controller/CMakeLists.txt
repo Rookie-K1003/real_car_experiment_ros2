@@ -13,8 +13,9 @@ set(DEPENDS
 
 # 添加动态库
 add_library(mpc_controller SHARED 
-  ${CMAKE_CURRENT_SOURCE_DIR}/mpc_controller.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mpc_tools.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/path_adapter.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/mpc_controller.cpp
 )
 
 set(target 
@@ -29,6 +30,7 @@ ament_target_dependencies(${target}
 target_link_libraries(${target} 
   config_reader
   mathlibs
+  osqp::osqp # 0313:链接到osqp库
 )
 
 # 安装动态库、节点和相关目录

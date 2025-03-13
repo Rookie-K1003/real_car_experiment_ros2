@@ -3,6 +3,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "config_reader.h"
+#include "mpc_controller.h"
 
 #include <vector>
 #include <cmath>
@@ -22,7 +23,8 @@ namespace Controller
     {
     public:
         ControllerProcess();
-        bool MainLoop(); // 控制器主循环
+        bool MainThread(); // 控制器主线程
+        void ControlCycleCallback(); // 控制周期回调函数    
     
     private:
         bool ControllerInit(); // 控制器初始化
@@ -34,11 +36,19 @@ namespace Controller
         std::unique_ptr<ConfigReader> process_config_; // 用于配置文件读取
         
         Path global_path_; // 全局路径
+
+        // ------ros客户端与服务端通信相关------
         // rclcpp::Client<GlobalPathService>::SharedPtr global_path_client_; // 全局路径请求客户端  ！废弃，改用订阅全局路径话题
         // *订阅者
         rclcpp::Subscription<Path>::SharedPtr global_path_sub_;
+        // TBD：用于rviz+urdf仿真的车辆状态如何订阅??
+
         // *回调函数
         void GlobalPathCallback(const Path::ConstSharedPtr msg);
+    
+    private:
+        // *不同控制器对象
+        MPCController mpc_controller_; // MPC控制器
 
     };
 
