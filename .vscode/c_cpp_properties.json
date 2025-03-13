@@ -7,14 +7,17 @@
       },
       "includePath": [
         "/opt/ros/foxy/include/**",
-        "/home/vecow/real_car_experiment_ros2/src/control/esdcan/include/**",
-        "/home/vecow/real_car_experiment_ros2/src/tracking/adas/include/**",
-        "/usr/include/**"
+        "/home/ikun/real_car_experiment_ros2/src/base_msgs/include/**",
+        "/home/ikun/real_car_experiment_ros2/src/controller/include/**",
+        "${workspaceFolder}/**",
+        "/usr/include/**",
+        "/usr/local/include/**"
       ],
       "name": "ROS",
       "intelliSenseMode": "gcc-x64",
       "compilerPath": "/usr/bin/gcc",
       "cStandard": "gnu11",
+      "compileCommands": "${workspaceFolder}/build/compile_commands.json",
       "cppStandard": "c++14"
     }
   ],
