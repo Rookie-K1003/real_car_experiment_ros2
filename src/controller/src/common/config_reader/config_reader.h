@@ -75,6 +75,7 @@ namespace Controller
         double max_steer_rate_ = 0.0;
         double max_acceleration_ = 0.0;
         double max_jerk_ = 0.0;
+        double min_acceleration_ = 0.0;
     };
 
     struct MpcCostWeightStruct
@@ -84,6 +85,8 @@ namespace Controller
         double w_steer_ = 0.0;
         double w_acceleration_ = 0.0;
         double w_jerk_ = 0.0;
+        double w_velocity_ = 0.0;
+        double w_steer_rate_ = 0.0;
     };
 
     class ConfigReader //配置文件读取器

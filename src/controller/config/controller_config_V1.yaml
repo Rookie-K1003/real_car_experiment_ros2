@@ -1,0 +1,42 @@
+vehicle:
+  id: 0                           #　序列号
+  frame: "base_footprint"         #　坐标名
+  length: 3.0                     #　长度
+  width: 1.5                      #　宽度
+  pose_x: 0.0                     #　x坐标
+  pose_y: 0.0                     #　y坐标
+  pose_theta: 0.0                 #　航向角
+  speed_ori: 1.0                  #　初速度
+
+global_path:                        #　全局路径
+  type: 0                           #　类型,　! 弃用，实际上是由规划模块给出
+
+controller:                         #　轨迹跟踪控制器
+  type: 0                           #　类型, 0:
+
+controller_vehicle_model:           #　用于控制器的车辆模型
+  lf: 1.0                             #　前轮距
+  lr: 1.0                             #　后轮距
+  m: 1500.0                             #　整车质量
+  Iz: 2000.0                            #　转动惯量
+
+mpc_controller:                     #　MPC控制器
+  dt: 0.1                           #　采样时间
+  pred_horizon: 10                  #　预测时域
+  control_horizon: 5                #　控制时域
+
+  # 硬约束
+  max_steer: 0.5236                 #　最大转向角
+  max_steer_rate: 10.0              #　最大转向角速度
+  max_acceleration: 1.0             #　最大加速度
+  max_jerk: 10.0                    #　最大加速度变化率
+  min_acceleration: -1.0            #　最小加速度
+
+  # 代价函数权重
+  w_position: 10.0                  #　位置误差权重
+  w_heading: 10.0                   #　航向误差权重
+  w_steer: 10.0                     #　转向角误差权重
+  w_acceleration: 10.0              #　加速度误差权重
+  w_jerk: 10.0                      #　加速度变化率误差权重
+  w_steer_rate: 10.0                #　转向角变化率误差权重
+  w_velocity: 10.0                  #　速度误差权重

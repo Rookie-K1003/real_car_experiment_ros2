@@ -67,9 +67,9 @@ namespace Controller
     {
         try
         {
-            mpc_param_.dt_ = controller_config["controller"]["dt"].as<double>();
-            mpc_param_.pred_horizon_ = controller_config["controller"]["pred_horizon"].as<int>();
-            mpc_param_.control_horizon_ = controller_config["controller"]["control_horizon"].as<int>();
+            mpc_param_.dt_ = controller_config["mpc_controller"]["dt"].as<double>();
+            mpc_param_.pred_horizon_ = controller_config["mpc_controller"]["pred_horizon"].as<int>();
+            mpc_param_.control_horizon_ = controller_config["mpc_controller"]["control_horizon"].as<int>();
         }
         catch (const YAML::Exception &e)
         {
@@ -80,10 +80,10 @@ namespace Controller
     {
         try
         {
-            mpc_model_.lf_ = controller_config["controller"]["lf"].as<double>();
-            mpc_model_.lr_ = controller_config["controller"]["lr"].as<double>();
-            mpc_model_.m_ = controller_config["controller"]["m"].as<double>();
-            mpc_model_.Iz_ = controller_config["controller"]["Iz"].as<double>();
+            mpc_model_.lf_ = controller_config["controller_vehicle_model"]["lf"].as<double>();
+            mpc_model_.lr_ = controller_config["controller_vehicle_model"]["lr"].as<double>();
+            mpc_model_.m_ = controller_config["controller_vehicle_model"]["m"].as<double>();
+            mpc_model_.Iz_ = controller_config["controller_vehicle_model"]["Iz"].as<double>();
         }
         catch (const YAML::Exception &e)
         {
@@ -94,10 +94,11 @@ namespace Controller
     {
         try
         {
-            mpc_hard_constraint_.max_steer_ = controller_config["controller"]["max_steer"].as<double>();
-            mpc_hard_constraint_.max_steer_rate_ = controller_config["controller"]["max_steer_rate"].as<double>();
-            mpc_hard_constraint_.max_acceleration_ = controller_config["controller"]["max_acceleration"].as<double>();
-            mpc_hard_constraint_.max_jerk_ = controller_config["controller"]["max_jerk"].as<double>();
+            mpc_hard_constraint_.max_steer_ = controller_config["mpc_controller"]["max_steer"].as<double>();
+            mpc_hard_constraint_.max_steer_rate_ = controller_config["mpc_controller"]["max_steer_rate"].as<double>();
+            mpc_hard_constraint_.max_acceleration_ = controller_config["mpc_controller"]["max_acceleration"].as<double>();
+            mpc_hard_constraint_.max_jerk_ = controller_config["mpc_controller"]["max_jerk"].as<double>();
+            mpc_hard_constraint_.min_acceleration_ = controller_config["mpc_controller"]["min_acceleration"].as<double>();
         }
         catch (const YAML::Exception &e)
         {
@@ -108,11 +109,13 @@ namespace Controller
     {
         try
         {
-            mpc_cost_weight_.w_position_ = controller_config["controller"]["w_position"].as<double>();
-            mpc_cost_weight_.w_heading_ = controller_config["controller"]["w_heading"].as<double>();
-            mpc_cost_weight_.w_steer_ = controller_config["controller"]["w_steer"].as<double>();
-            mpc_cost_weight_.w_acceleration_ = controller_config["controller"]["w_acceleration"].as<double>();
-            mpc_cost_weight_.w_jerk_ = controller_config["controller"]["w_jerk"].as<double>();
+            mpc_cost_weight_.w_position_ = controller_config["mpc_controller"]["w_position"].as<double>();
+            mpc_cost_weight_.w_heading_ = controller_config["mpc_controller"]["w_heading"].as<double>();
+            mpc_cost_weight_.w_steer_ = controller_config["mpc_controller"]["w_steer"].as<double>();
+            mpc_cost_weight_.w_acceleration_ = controller_config["mpc_controller"]["w_acceleration"].as<double>();
+            mpc_cost_weight_.w_jerk_ = controller_config["mpc_controller"]["w_jerk"].as<double>();
+            mpc_cost_weight_.w_velocity_ = controller_config["mpc_controller"]["w_velocity"].as<double>();
+            mpc_cost_weight_.w_steer_rate_ = controller_config["mpc_controller"]["w_steer_rate"].as<double>();
         }
         catch (const YAML::Exception &e)
         {
