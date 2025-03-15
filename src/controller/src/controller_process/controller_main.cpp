@@ -23,6 +23,8 @@ int main(int argc, char *argv[])
     return 1;
   }
 
+  // node->MainThread();
+
   // RCLCPP_INFO(rclcpp::get_logger("controller_process_main"), "controller start spinning");
   
   rclcpp::spin(node);

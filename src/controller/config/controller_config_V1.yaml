@@ -12,7 +12,7 @@ global_path:                        #　全局路径
   type: 0                           #　类型,　! 弃用，实际上是由规划模块给出
 
 controller:                         #　轨迹跟踪控制器
-  type: 0                           #　类型, 0:
+  type: 2                           #　类型, 0:运动学LQR控制器, 1:动力学LQR控制器, 2:MPC控制器
 
 controller_vehicle_model:           #　用于控制器的车辆模型
   lf: 1.0                             #　前轮距

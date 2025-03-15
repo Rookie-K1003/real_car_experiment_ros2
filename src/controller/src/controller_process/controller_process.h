@@ -24,7 +24,7 @@ namespace Controller
     public:
         ControllerProcess();
         bool MainThread(); // 控制器主线程
-        void ControlCycleCallback(); // 控制周期回调函数    
+        void MPCControlCycleCallback(); // MPC控制周期回调函数    
     
     private:
         bool ControllerInit(); // 控制器初始化
@@ -48,7 +48,7 @@ namespace Controller
     
     private:
         // *不同控制器对象
-        MPCController mpc_controller_; // MPC控制器
+        MPCController mpc_controller_; // MPC控制器，用于调用其函数
 
     };
 

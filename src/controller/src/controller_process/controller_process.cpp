@@ -28,9 +28,9 @@ namespace Controller
         // 读取配置文件
         process_config_ = std::make_unique<ConfigReader>();
 
-        // 订阅参考轨迹，暂时用全局路径代替
-        global_path_sub_ = this->create_subscription<Path>(
-            "/planning/global_path_planning", rclcpp::SensorDataQoS(), std::bind(&ControllerProcess::GlobalPathCallback, this, std::placeholders::_1));
+        // // 订阅参考轨迹，暂时用全局路径代替
+        // global_path_sub_ = this->create_subscription<Path>(
+        //     "/planning/global_path_planning", rclcpp::SensorDataQoS(), std::bind(&ControllerProcess::GlobalPathCallback, this, std::placeholders::_1));
 
     }
 
@@ -43,18 +43,25 @@ namespace Controller
         // 循环
         while (rclcpp::ok())
         {
-            ControlCycleCallback();
+            // TODO: 判断使用哪种控制器
+            MPCControlCycleCallback();
+
             rate.sleep();
         }
 
         return false;
     }
 
-    void ControllerProcess::ControlCycleCallback()
+    void ControllerProcess::MPCControlCycleCallback()
     {
-        // ~ step1: 判断使用哪种控制器
+        // ~ step1: 获取参考路径/轨迹，不满足xx条件，直接返回
+        // TODO：求解失败、未求解完成...
+        // if (!mpc_controller_.GetReferenceTrajectory(global_path_)) {
+        //     RCLCPP_ERROR(this->get_logger(), "[MPC_Controller] Fail to get ref_traj info");
+        //     return;
+        // }
 
-        // ~ step2: 控制器运行(先以MPC控制器为例)
+        // ~ step2: 控制器运行
         if (!mpc_controller_.RunOnce()) {
             RCLCPP_ERROR(this->get_logger(), "MPC controller failed");
             return;
@@ -63,10 +70,12 @@ namespace Controller
         // ~ step3: 发布数据
 
         // ~ step4: 控制器状态更新
+
+        // ~ step5: 可视化
         
     }
 
-    // 暂时先不用
+    // !!暂时先不用
     bool ControllerProcess::ControllerInit()
     {
         // 如果参考轨迹为空，则控制器初始化失败 ！！需要先启动规划线程
