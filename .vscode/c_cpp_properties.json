@@ -11,7 +11,11 @@
         "/home/vecow/real_car_experiment_ros2/src/tracking/adas/include/**",
         "/home/vecow/real_car_experiment_ros2/install/control_msgs/include",
         "/home/vecow/real_car_experiment_ros2/install/chassis_msgs/include",
-        "/usr/include/**"
+        "/home/ikun/real_car_experiment_ros2/src/base_msgs/include/**",
+        "/home/ikun/real_car_experiment_ros2/src/controller/include/**",
+        "${workspaceFolder}/**",
+        "/usr/include/**",
+        "/usr/local/include/**"
       ],
       "name": "ROS",
       "intelliSenseMode": "gcc-x64",
