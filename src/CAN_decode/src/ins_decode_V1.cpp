@@ -1,7 +1,7 @@
 /*
     修改原组合导航CAN解析代码，适配ros2自带的位姿、imu、里程计等msg类型
     @author: KQ
-    @date: 2025-03-06
+    @date: 2025-04-17
     @note: 
     1. 发布ros2自带的位姿、imu、里程计等msg类型
     2. 将原有rtk使用的原始角速度和加速度改为车辆坐标系加速度和角速度
@@ -14,8 +14,10 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
+#include "geometry_msgs/msg/twist_stamped.hpp"
 #include "location_msgs/msg/rtk.hpp"
 #include <ntcan.h>
+#include "lla2map_converter.hpp"
 
 using namespace std;
 
@@ -26,19 +28,32 @@ class can_decode_class : public rclcpp::Node
 {
 public:
     explicit can_decode_class(const rclcpp::NodeOptions &node_options)
-        : Node("can_decode", node_options)
+        : Node("can_decode", node_options), converter(latitude_origin_, longitude_origin_, altitude_origin_)
     {
-        pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>("pose", 10);
-        odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("odom", 10);
-        imu_pub_ = create_publisher<sensor_msgs::msg::Imu>("imu", 10);
+        pose_pub_ = create_publisher<geometry_msgs::msg::PoseStamped>("current_pose", 10);
+        odom_pub_ = create_publisher<nav_msgs::msg::Odometry>("current_odom", 10);
+        imu_pub_ = create_publisher<sensor_msgs::msg::Imu>("current_imu", 10);
         rtk_pub_ = create_publisher<location_msgs::msg::RTK>("rtk_data", 10);
+        velocity_pub_ = create_publisher<geometry_msgs::msg::TwistStamped>("current_velocity", 10);
 
         // 读取配置文件
+        // 读取配置文件中的参数
+        this->declare_parameter("localization.latitude_origin", 0.0);
+        this->declare_parameter("localization.longitude_origin", 0.0);
+        this->declare_parameter("localization.altitude_origin", 0.0);
+
+        this->get_parameter("localization.latitude_origin", latitude_origin_);
+        this->get_parameter("localization.longitude_origin", longitude_origin_);
+        this->get_parameter("localization.altitude_origin", altitude_origin_);
+
+}
+
 
     }
 
     ~can_decode_class() {}
 
+    // 节点主函数
     void main_process()
     {
         int channel = 3; // CAN通道号
@@ -88,6 +103,7 @@ public:
         nav_msgs::msg::Odometry odom_data;
         sensor_msgs::msg::Imu imu_data;
         location_msgs::msg::RTK rtk_data;
+        geometry_msgs::msg::TwistStamped velocity_data;
 
         // 节点循环接收CAN消息并解析
         while (rclcpp::ok()) {
@@ -100,11 +116,18 @@ public:
                 }
             }
 
+            // 将lla转map坐标系下的x,y,z
+            auto [x, y, z] = converter.convert(latitude_, longitude_, altitude_);
+            map_x_ = x;
+            map_y_ = y;
+            map_z_ = z;
+
             // 发布ROS消息
-            publish_pose();
-            publish_odom();
-            publish_imu();
-            publish_rtk();
+            publish_pose(pose_data); // geometry_msgs/msg/pose_stamped
+            publish_odom(odom_data); // nav_msgs/msg/odometry
+            publish_imu(imu_data);
+            publish_rtk(rtk_data);
+            publish_velocity(velocity_data); // geometry_msgs/msg/twist_stamped
 
             r.sleep();
         }
@@ -122,11 +145,13 @@ public:
     }
 
 private:
-    rclcpp::Publisher<geometry_msgs::msg::Pose>::SharedPtr pose_pub_;    
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;    
     rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr odom_pub_;
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
     rclcpp::Publisher<location_msgs::msg::RTK>::SharedPtr rtk_pub_;
+    rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr velocity_pub_;
     
+    LlaToMapConverter converter;  // 类成员变量
     // 其他的一些解析变量
     int system_state_; // 系统状态 1-卫导，2-组合导航模式，3-纯惯导模式
     int satellite_status_; // 卫星状态 4和5为RTK模式
@@ -146,6 +171,9 @@ private:
     double map_x_; // 地图坐标系下X坐标
     double map_y_; // 地图坐标系下Y坐标
     double map_z_; // 地图坐标系下Z坐标
+    double latitude_origin_ = 31.2304; // 地图坐标系原点纬度
+    double longitude_origin_ = 121.4737; // 地图坐标系原点经度
+    double altitude_origin_ = 0.0; // 地图坐标系原点高度
 
     // 计算、数据转换用到的常量
     const double e = 0.0818191908425;
@@ -167,36 +195,37 @@ private:
         if (msg.id == 803) {
             // INS状态
             // 一些系统定位的,暂时先不处理
+            rtk_data.status = CAN_decode(recv[i], 16, 8, 1, 0, 0); // RTK稳定解定位定向时，正常应当为status4
         } else if (msg.id == 804) {
             // GPS经纬度
             latitude_ = CAN_decode(msg, 0, 32, 1e-7, 0, 0);
-            longitude_ = CAN_decode(msg, 32, 32, 1e-7, 0, 0);            
+            longitude_ = CAN_decode(msg, 32, 32, 1e-7, 0, 0);
+            rtk_data.latitude = latitude_;
+            rtk_data.longitude = longitude_;            
         } else if (msg.id == 801) {
             // IMU角速度原始值
-            sensor_msgs::msg::Imu imu_msg;
-            imu_msg.angular_velocity.x = CAN_decode(msg, 0, 20, 1e-2, 0, 1);
-            imu_msg.angular_velocity.y = CAN_decode(msg, 20, 20, 1e-2, 0, 1);
-            imu_msg.angular_velocity.z = CAN_decode(msg, 40, 20, 1e-2, 0, 1);
-            imu_pub->publish(imu_msg);
+            rtk_data.angrate_raw_x = CAN_decode(recv[i], 0, 20, 1e-2, 0, 1) * torad;
+            rtk_data.angrate_raw_y = CAN_decode(recv[i], 20, 20, 1e-2, 0, 1) * torad;
+            rtk_data.angrate_raw_z = CAN_decode(recv[i], 40, 20, 1e-2, 0, 1) * torad;
+
         } else if (msg.id == 802) {
             // IMU加速度原始值
             // 处理消息并发布到相应的话题
+            rtk_data.accel_raw_x = CAN_decode(recv[i], 0, 20, 1e-4, 0, 1) * g;
+            rtk_data.accel_raw_y = CAN_decode(recv[i], 20, 20, 1e-4, 0, 1) * g;
+            rtk_data.accel_raw_z = CAN_decode(recv[i], 40, 20, 1e-4, 0, 1) * g;           
+
         } else if (msg.id == 805) {
             // 位置高度信息
             altitude_ = CAN_decode(msg, 0, 32, 1e-3, 0, 0);
-        } else if (msg.id == 806) {
-            // 位姿
-            nav_msgs::msg::Odometry odom_msg;
-            odom_msg.pose.pose.position.x = CAN_decode(msg, 0, 32, 1e-3, 0, 0);
-            odom_msg.pose.pose.position.y = CAN_decode(msg, 32, 32, 1e-3, 0, 0);
-            odom_msg.pose.pose.position.z = CAN_decode(msg, 64, 32, 1e-3, 0, 0);
-            odom_pub->publish(odom_msg);
+            rtk_data.height = altitude_;
         } else if (msg.id == 806) {
             // 位置sigma值（定位误差？）
 
         } else if (msg.id == 807) {
             // 车辆速度
-            velocity_ = CAN_decode(msg, 48, 16, 1e-2, 0, 0);
+            velocity_ = CAN_decode(msg, 48, 16, 1e-2, 0, 0); // 需要验证和轮速误差得到车速的误差
+            rtk_data.velocity = velocity_;
         }
         else if (msg.id == 808) {
             // 速度sigma
@@ -212,6 +241,9 @@ private:
             roll_ = CAN_decode(msg, 32, 16, 1e-2, 0, 1);
             pitch_ = CAN_decode(msg, 16, 16, 1e-2, 0, 1);
             yaw_ = CAN_decode(msg, 0, 16, 1e-2, 0, 0);
+            rtk_data.heading = yaw_;
+            rtk_data.pitch = pitch_;
+            rtk_data.roll = roll_;
         }
         else if (msg.id == 811) {
             // 姿态角sigma
@@ -313,12 +345,6 @@ private:
         return output;
     }
 
-    void lla2xyz(double lat, double lon, double alt)
-    {
-        // 实现从经纬度到笛卡尔坐标的转换逻辑
-        // ... (保持原有转换逻辑)
-    }
-
     void publish_pose(geometry_msgs::msg::PoseStamped pose)
     {
         // 时间戳、坐标系
@@ -326,8 +352,6 @@ private:
         pose.header.frame_id = "map";
 
         // 位置
-        // lla转xyz,获得地图坐标系下的xyz
-        lla2xyz(latitude_, longitude_, altitude_);
         pose.pose.position.x = map_x_;
         pose.pose.position.y = map_y_;
         pose.pose.position.z = map_z_;
@@ -338,6 +362,76 @@ private:
         // 发布话题
         pose_pub_->publish(pose);
     }
+    void publish_odom(nav_msgs::msg::Odometry odom)
+    {
+        // 时间戳、坐标系
+        odom.header.stamp = rclcpp::Clock().now();
+        odom.header.frame_id = "map";
+        odom.child_frame_id = "base_link";
+
+        // 位置
+        odom.pose.pose.position.x = map_x_;
+        odom.pose.pose.position.y = map_y_;
+        odom.pose.pose.position.z = map_z_;
+        // 姿态
+        // rpy转四元数,注意单位要用弧度制
+        odom.pose.pose.orientation = tf2::createQuaternionMsgFromRollPitchYaw(roll_ * torad, pitch_ * torad, yaw_ * torad);
+        // 速度
+        odom.twist.twist.linear.x = velocity_;
+        odom.twist.twist.linear.y = 0;
+        odom.twist.twist.linear.z = 0;
+        odom.twist.twist.angular.x = angrate_x_;
+        odom.twist.twist.angular.y = angrate_y_;
+        odom.twist.twist.angular.z = angrate_z_;
+
+        // 发布话题
+        odom_pub_->publish(odom);
+    }
+    void publish_imu(sensor_msgs::msg::Imu imu)
+    {
+        // 时间戳、坐标系
+        imu.header.stamp = rclcpp::Clock().now();
+        imu.header.frame_id = "base_link";
+
+        // 姿态
+        // rpy转四元数,注意单位要用弧度制
+        imu.orientation = tf2::createQuaternionMsgFromRollPitchYaw(roll_ * torad, pitch_ * torad, yaw_ * torad);
+        // 角速度
+        imu.angular_velocity.x = angrate_x_;
+        imu.angular_velocity.y = angrate_y_;
+        imu.angular_velocity.z = angrate_z_;
+        // 线加速度
+        imu.linear_acceleration.x = velocity_;
+        imu.linear_acceleration.y = 0;
+        imu.linear_acceleration.z = 0;
+
+        // 发布话题
+        imu_pub_->publish(imu);
+    }
+    void publish_rtk(location_msgs::msg::RTK rtk)
+    {
+        // 时间戳、坐标系
+        rtk.header.stamp = rclcpp::Clock().now();
+        rtk.header.frame_id = "map";
+        // 解析CAN报文时就赋值了，直接发布
+        rtk_pub_->publish(rtk);
+    }
+    void publish_velocity(geometry_msgs::msg::Twist twist)
+    {
+        // 时间戳、坐标系
+        twist.header.stamp = rclcpp::Clock().now();
+        twist.header.frame_id = "base_link";
+        // 速度
+        twist.linear.x = velocity_;
+        twist.linear.y = 0;
+        twist.linear.z = 0;
+        twist.angular.x = angrate_x_;
+        twist.angular.y = angrate_y_;
+        twist.angular.z = angrate_z_;
+        // 发布话题
+        velocity_pub_->publish(twist);
+    }
+
 };
 
 // 节点主函数

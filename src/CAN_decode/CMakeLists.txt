@@ -3,7 +3,7 @@ project(can_decode)
 
 # add_compile_options(-std=c++14)
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 message("CMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}")
 
@@ -20,24 +20,13 @@ find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(location_msgs REQUIRED)
 #find_package(message_generation REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 
 find_package(Eigen3 REQUIRED)
 include_directories(
   include
   ${EIGEN3_INCLUDE_DIRS}
 )
-
-# add_message_files(
-#   FILES
-#   rtk.msg
-# )
-
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs
-#   geometry_msgs
-# )
-
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -50,20 +39,26 @@ include_directories(
     ${catkin_INCLUDE_DIRS}
 )
 
-# include_directories(
-# 	include
-# 	${catkin_INCLUDE_DIRS}
-#   ${EIGEN3_INCLUDE_DIR}
-# )
-
 link_directories(${catkin_LIB_DIRS})
 
+# CAN解析节点
 add_executable(can_decode
-    src/can_decode_fix_bug.cpp)
+    src/ins_decode_V1.cpp)
 
+# 可视化节点
+add_executable(ins_visualizer
+    src/ins_visualizer.cpp)
 
+# 添加 lla2map_converter 的源文件
+add_library(lla2map_converter
+    src/lla2map_converter.cpp
+)
 
-#add_dependencies(can_decode ${catkin_EXPORTED_TARGETS})
+# 链接 lla2map_converter 库
+target_include_directories(lla2map_converter PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 ament_target_dependencies(can_decode
     rclcpp
     std_msgs
@@ -71,18 +66,24 @@ ament_target_dependencies(can_decode
     geometry_msgs
     location_msgs
 )
-# add_executable(path_visu
-#     src/path_visu.cpp)
 
-# target_link_libraries(path_visu
-#   ${catkin_LIBRARIES}
-# )
+ament_target_dependencies(ins_visualizer
+    rclcpp
+    std_msgs
+    nav_msgs
+    geometry_msgs
+    location_msgs
+)
+
 target_link_libraries(can_decode
   ${catkin_LIBRARIES}
   libntcan.so
+  lla2map_converter
 )
-
-
+target_link_libraries(ins_visualizer
+  ${catkin_LIBRARIES}
+  lla2map_converter
+)
 
 install(
   DIRECTORY launch
@@ -91,6 +92,7 @@ install(
 
 install(TARGETS 
   can_decode
+  ins_visualizer
   DESTINATION lib/${PROJECT_NAME}
 )
 
