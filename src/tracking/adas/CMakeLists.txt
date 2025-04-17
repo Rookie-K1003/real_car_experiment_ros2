@@ -5,7 +5,7 @@ project(adas)
 
 # Default to C++14
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17)
 endif()
 
 message("CMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}")
@@ -87,6 +87,7 @@ add_executable(control_test
 ament_target_dependencies(control_test
     rclcpp
     control_msgs
+    geometry_msgs # 20250416
 )
 
 install(

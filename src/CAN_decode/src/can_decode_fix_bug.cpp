@@ -147,6 +147,8 @@ public:
         const double g = 9.7964;
         double Re = 0;
 
+        const uint32_t sunday_time = 1744502400; // todo config
+
         // int32_t ret2=-1;//是否接收成功
         rclcpp::Rate r(100); // @JackFine 需要更具rtk的具体频率决定
 
@@ -170,6 +172,7 @@ public:
                     {
                         rtkdata.gpstime = CAN_decode(recv[i], 16, 32, 1e-3, 0, 0);
                         // rtkdata.gpstime = CAN_decode(recv[i], 40, 32, 1e-3, 0, 0);
+                        print_timestamp_from_gpstime(sunday_time, rtkdata.gpstime);
                     }
                     // std::cout << "rtkdata.gpstime = " << rtkdata.gpstime << std::endl;
                     if (recv[i].id == 0x324)
@@ -312,6 +315,27 @@ public:
 
 private:
     rclcpp::Publisher<location_msgs::msg::RTK>::SharedPtr rtk_pub;
+    
+    // 
+    void print_timestamp_from_gpstime(uint32_t sunday_zero_time, double gpstime)
+    {
+        // 计算总时间戳（单位：秒，浮点型）
+        double total_timestamp = sunday_zero_time + gpstime;
+
+        // 拆分为整数秒和纳秒
+        uint32_t sec = static_cast<uint32_t>(total_timestamp);
+        uint32_t nanosec = static_cast<uint32_t>((total_timestamp - sec) * 1e9);
+
+        // 打印结果
+        // std::cout << "Total Timestamp: " << total_timestamp << " seconds" << std::endl;
+        // std::cout << "sec     = " << sec << std::endl;
+        // std::cout << "nanosec = " << nanosec << std::endl;
+        RCLCPP_INFO(this->get_logger(), "  sec      = %u", sec);
+        RCLCPP_INFO(this->get_logger(), "  nanosec  = %u", nanosec);
+        RCLCPP_INFO(this->get_logger(), "  timestamp= %.9f", total_timestamp);
+
+    }
+
     void rtkdata_reset(location_msgs::msg::RTK &rtkdata)
     {
         rtkdata.gpstime = NEWFLAG;

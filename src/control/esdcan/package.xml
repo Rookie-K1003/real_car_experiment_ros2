@@ -57,6 +57,7 @@
   <depend>geometry_msgs</depend>
   <depend>location_msgs</depend>
   <depend>control_msgs</depend>
+  <depend>chassis_msgs</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
 

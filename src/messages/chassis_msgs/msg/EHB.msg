@@ -1,0 +1,3 @@
+int32 driver_brake_status
+int32 wire_control_brake_enable
+float64 brk_trq_act

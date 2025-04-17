@@ -3,7 +3,7 @@ project(esdcan)
 
 # add_compile_options(-std=c++14)
 if(NOT CMAKE_CXX_STANDARD)
-  set(CMAKE_CXX_STANDARD 14)
+  set(CMAKE_CXX_STANDARD 17) # 20250416
 endif()
 message("CMAKE_CXX_STANDARD=${CMAKE_CXX_STANDARD}")
 
@@ -19,6 +19,7 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(location_msgs REQUIRED)
 find_package(control_msgs REQUIRED)
+find_package(chassis_msgs REQUIRED) # 20250416
 
 find_package(Threads REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -57,6 +58,7 @@ include_directories(
 link_directories(${catkin_LIB_DIRS})
 add_library(canlib src/CanHandler.cc src/CanMsgDefs.cc src/CanCommonFcn.cc)
 
+# Node
 add_executable(esdcan src/main.cc ${HEADERS} ${SOURCES})
 ament_target_dependencies(esdcan
     rclcpp
@@ -64,6 +66,7 @@ ament_target_dependencies(esdcan
     geometry_msgs
     location_msgs
     control_msgs
+    chassis_msgs # 20250416
 )
 #target_link_libraries(esdcan ${CMAKE_CURRENT_SOURCE_DIR}/dll/libCanCmd.so ${catkin_LIBRARIES} pthread glog)
 target_link_libraries(esdcan ${catkin_LIBRARIES} libntcan.so pthread glog)

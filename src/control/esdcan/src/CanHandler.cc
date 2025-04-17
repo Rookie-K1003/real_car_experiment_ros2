@@ -148,4 +148,22 @@ namespace CanProcess
         return;
     }
 
+    // 20250416 using for encode and decode
+    std::vector<int> generate_motorola_bit_order(int msb, int lsb, int size) {
+        std::vector<int> bit_order;
+        int curr = msb;
+        for (int i = 0; i < size; ++i) {
+            bit_order.push_back(curr);
+            if (curr % 8 == 0) {
+                // 到达字节开头，需要跳到下一个字节（高地址）的高位
+                curr += 15;
+            }
+            else {
+                // 否则继续在当前字节递减
+                curr -= 1;
+            }
+        }
+        return bit_order;
+    }
+
 }

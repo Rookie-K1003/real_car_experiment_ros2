@@ -11,7 +11,7 @@
 #include <cstdint>
 #include <stdexcept>
 #include <cstring>
-
+#include <vector>
 
 // CanProcess命名空间， 使用 using namespace CanProcess; 或者 CanProcess::something
 namespace CanProcess
@@ -163,169 +163,43 @@ namespace CanProcess
     };
 
     /*---------------------编码部分，工控机算法得到的物理数据通过CAN发给底层控制器--------------*/
-    /**
-     * Encode data to can message
-     * Intel 字节序编码 CAN 消息，萌健号上的 VCU 通信协议中用到
-     * @param data 可以选择不同类型的数据， 例如 bool int double 等等
-     * @param lsb @param msb @param size @param offset @param factor 与 excel表中的消息属性对应
-    */
-    // template <typename T>  // 模板函数必须定义在头文件中， 否则无法链接
-    // void encodeMsg(T data, int lsb, int msb, int size, double offset, double factor, uint8_t *output)
-    // {
-    //     data = (data - offset) / factor;
-    //     // 确定起始的字节位置，也就是layout表上，消息开始的行数（不是bit位置）
-    //     uint8_t *startByte = output + lsb / 8;
-    //     int length = msb / 8 - lsb / 8 + 1;
+    std::vector<int> generate_motorola_bit_order(int msb, int lsb, int size);
 
-    //     uint64_t temp(data);
-    //     // 截断该数据， 防止数据溢出
-    //     uint64_t i = (1 << size) - 1;
-    //     temp &= i;
-
-    //     // 移动位置到合适的位置（按照lsb移动，确保数据在合适的位置）
-    //     temp <<= (lsb % 8);
-
-    //     for (int i = 0; i < length; i++)
-    //     {
-    //         int idx = length - 1 - i;
-    //         startByte[idx] |= ((temp >> (8 * (idx))) & (255));
-    //     }
-    // }
-
-    /**
-     * Encode data to CAN message in Motorola (Big Endian) byte order
-     * 20241205 用于 Motorola (Big Endian) 字节序编码 CAN 消息，美团车上的VCU通信协议中用到
-     * @param data 可以选择不同类型的数据，例如 bool int double 等等
-     * @param lsb @param msb @param size @param offset @param factor 与 Excel 表中的消息属性对应
-     */
-    // template <typename T>
-    // void encodeMsg(T data, int lsb, int msb, int size, double offset, double factor, uint8_t *output)
-    // {
-    //     // 计算数据的原始值
-    //     data = (data - offset) / factor;
-
-    //     // 确定起始的字节位置
-    //     uint8_t *startByte = output + lsb / 8;
-    //     int length = msb / 8 - lsb / 8 + 1;
-
-    //     // 转换数据为无符号长整型
-    //     uint64_t temp = static_cast<uint64_t>(data);
-
-    //     // 截断该数据，防止溢出
-    //     uint64_t mask = (1ULL << size) - 1;  // 使用 1ULL 确保是无符号长整型
-    //     temp &= mask;
-
-    //     // 移动位置到合适的位置（按照 lsb 移动，确保数据在合适的位置）
-    //     temp <<= (lsb % 8);
-
-    //     // 按照大端字节序写入数据
-    //     for (int i = 0; i < length; i++)
-    //     {
-    //         int idx = i;  // 大端字节序，低位字节在后面
-    //         startByte[idx] |= ((temp >> (8 * (length - 1 - idx))) & 0xFF);
-    //     }
-    // } // 此版本经过尝试，数据发出后底层收的不对 20241206 @kq 存疑，需要用vs调试查一下
-
-
-    /**
-     * 20241206 Encode data to CAN message in Motorola (Big Endian) byte order V3版本
-     * 为避免msb可能比lsb小的情况（跨字节时），所以计算逻辑中只用lsb
-     * @param data 实际数据，可以是不同类型，例如 int、float 等
-     * @param msg CAN 消息数据缓冲区
-     * @param lsb 该信号的起始位
-     * @param msb 该信号的结束位
-     * @param size 信号的位大小
-     * @param offset 偏移量
-     * @param factor 缩放因子
-     */
     template <typename T>
-    void encodeMsg(T data, int lsb, int msb, int size, double offset, double factor, uint8_t* output)
-    {
-        // Apply offset and factor to data
+    void encodeMsg(T data, int lsb, int msb, int size,
+        double offset, double factor, uint8_t* output) {
         data = static_cast<T>((data - offset) / factor);
-
-        // Truncate the data to the specified size
         uint64_t temp = static_cast<uint64_t>(data) & ((1ULL << size) - 1);
 
-        // Determine the starting byte position
-        int startByte = lsb / 8;
-        int startBit = lsb % 8;
+        std::vector<int> bit_order = generate_motorola_bit_order(msb, lsb, size);
 
-        // Clear the output buffer for the given range
-        for (int i = startByte; i <= (msb / 8); ++i) {
-            output[i] = 0;
-        }
-
-        // Fill in the bits
         for (int i = 0; i < size; ++i) {
-            if (temp & (1ULL << i)) {
-                output[startByte - (startBit + i) / 8] |= (1 << ((startBit + i) % 8));
+            int bit_index = bit_order[i];
+            int byte = bit_index / 8;
+            int bit = bit_index % 8;
+
+            output[byte] &= ~(1 << bit);
+            if (temp & (1ULL << (size - 1 - i))) {
+                output[byte] |= (1 << bit);
             }
         }
-        
-    } 
+    }
 
-    
-    /*---------------------解码部分，VCU通过CAN发来的转为实际物理数据值------------------------*/
-    /**
-     * Decode can message to data, 上面全部反向操作就行了
-     * 用于解码Intel字节序的 CAN 消息，萌健号上的 VCU 通信协议中用到
-     * @param data 可以选择不同类型的数据， 例如 bool int double 等等
-     * @param lsb @param msb @param size @param offset @param factor 与 excel表中的消息属性对应
-    */
-    // template <typename T>
-    // T decodeMsg(uint8_t *msg, int lsb, int msb, int size, double offset, double factor)
-    // {
-    //     int64_t temp = 0;
-    //     uint8_t *startByte = msg + lsb / 8;
-    //     int length = msb / 8 - lsb / 8 + 1;
-
-    //     for (int i = 0; i < length; i++)
-    //     {
-    //         int idx = length - 1 - i;
-    //         temp += (startByte[idx] << (8 * idx));
-    //     }
-    //     temp >>= (lsb % 8);
-    //     int64_t i = ((static_cast<int64_t>(1) << size) - static_cast<int64_t>(1));
-    //     temp &= i;
-    //     return T((temp * factor + offset));
-    // }
-
-    /**
-     * Decode CAN message to data in Motorola (Big Endian) byte order
-     * 20241205 用于 Motorola (Big Endian) 字节序解码 CAN 消息，美团车上的VCU通信协议中用到
-     * @param msg CAN 消息数据
-     * @param lsb 该信号的起始位
-     * @param msb 该信号的结束位
-     * @param size 信号的位大小
-     * @param offset 偏移量
-     * @param factor 缩放因子
-     * @return 解码后的数据
-     */
     template <typename T>
-    T decodeMsg(uint8_t *msg, int lsb, int msb, int size, double offset, double factor)
-    {
-        // 以实际转向角度为例
-        int64_t temp = 0;
-        uint8_t *startByte = msg + lsb / 8;
-        int length = msb / 8 - lsb / 8 + 1;
+    T decodeMsg(uint8_t* msg, int lsb, int msb, int size,
+        double offset, double factor) {
+        uint64_t temp = 0;
+        std::vector<int> bit_order = generate_motorola_bit_order(msb, lsb, size);
 
-        // 按照大端字节序读取数据
-        for (int i = 0; i < length; i++)
-        {
-            // 直接使用 i，表示从高字节到低字节
-            temp += (startByte[i] << (8 * (length - 1 - i)));
+        for (int i = 0; i < size; ++i) {
+            int bit_index = bit_order[i];
+            int byte = bit_index / 8;
+            int bit = bit_index % 8;
+            if (msg[byte] & (1 << bit)) {
+                temp |= (1ULL << (size - 1 - i));
+            }
         }
-
-        // 右移以调整到正确的位位置
-        temp >>= (lsb % 8);
-
-        // 创建一个掩码用于截断多余的位
-        int64_t mask = (static_cast<int64_t>(1) << size) - 1;
-        temp &= mask;
-
-        // 应用因子和偏移量，返回解码后的数据
-        return T((temp * factor + offset));
+        return static_cast<T>(temp * factor + offset);
     }
 }
 

@@ -1,0 +1,4 @@
+int32 driver_throttle_status
+int32 wire_control_drive_enable
+int32 actual_gear_shift_position
+float64 motor_torque

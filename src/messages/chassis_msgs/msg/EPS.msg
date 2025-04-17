@@ -1,0 +1,3 @@
+int32 driver_steer_status
+int32 wire_control_drive_enable
+float64 steering_angle

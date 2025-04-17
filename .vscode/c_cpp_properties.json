@@ -9,13 +9,15 @@
         "/opt/ros/foxy/include/**",
         "/home/vecow/real_car_experiment_ros2/src/control/esdcan/include/**",
         "/home/vecow/real_car_experiment_ros2/src/tracking/adas/include/**",
+        "/home/vecow/real_car_experiment_ros2/install/control_msgs/include",
+        "/home/vecow/real_car_experiment_ros2/install/chassis_msgs/include",
         "/usr/include/**"
       ],
       "name": "ROS",
       "intelliSenseMode": "gcc-x64",
       "compilerPath": "/usr/bin/gcc",
       "cStandard": "gnu11",
-      "cppStandard": "c++14"
+      "cppStandard": "c++17"
     }
   ],
   "version": 4
