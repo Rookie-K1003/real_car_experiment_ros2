@@ -38,12 +38,13 @@ namespace CanProcess
 
     void initRecvMessage()
     {
-        unsigned int ids[3] = {0x75, 0x72, 0x74};
+        unsigned int ids[4] = {0x75, 0x72, 0x74, 0x305};
         for (auto i : ids)
         {
             all_can_recv[i] = CAN_Message(i);
         }
 
+        // lsb msb size offset factor
         // all message in message 0x75 EPS反馈
         CAN_Message *msg0x75 = &all_can_recv[0x75];
         msg0x75->all_int_data["EPS_DriverSteerStatus"] = SingleMsg_int("EPS_DriverSteerStatus", 4, 4, 1, 0, 1);
@@ -62,6 +63,12 @@ namespace CanProcess
         msg0x74->all_int_data["VCU_WireControlDriveEnable"] = SingleMsg_int("VCU_WireControlDriveEnable", 5, 7, 3, 0, 1);
         msg0x74->all_int_data["VCU_ActualGearShiftPosition"] = SingleMsg_int("VCU_ActualGearShiftPosition", 12, 13, 2, 0, 1);
         msg0x74->all_double_data["VCU_MotorPresentTorque"] = SingleMsg_double("VCU_MotorPresentTorque", 40, 39, 16, -3000, 0.1);
+
+        // all message in message 0x305 ESC轮速和车速
+        CAN_Message *msg0x305 = &all_can_recv[0x305];
+        msg0x305->all_double_data["ESC_Wheel_Speed_FL"] = SingleMsg_double("ESC_Wheel_Speed_FL", 13, 7, 11, 0, 0.05625);
+        msg0x305->all_double_data["ESC_Wheel_Speed_FR"] = SingleMsg_double("ESC_Wheel_Speed_FR", 29, 23, 11, 0, 0.05625);
+        msg0x305->all_double_data["ESC_Vehicle_Speed"] = SingleMsg_double("ESC_Vehicle_Speed", 45, 39, 11, 0, 0.05625);
 
     }
 

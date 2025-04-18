@@ -7,12 +7,23 @@
       },
       "includePath": [
         "/opt/ros/foxy/include/**",
+        // 车上工控机
         "/home/vecow/real_car_experiment_ros2/src/control/esdcan/include/**",
         "/home/vecow/real_car_experiment_ros2/src/tracking/adas/include/**",
         "/home/vecow/real_car_experiment_ros2/install/control_msgs/include",
         "/home/vecow/real_car_experiment_ros2/install/chassis_msgs/include",
+        "/home/vecow/real_car_experiment_ros2/src/my_planning_and_control/general_modules/include",
+        "/home/vecow/real_car_experiment_ros2/src/my_planning_and_control/planner_modules/include",
+        "/home/vecow/real_car_experiment_ros2/src/my_planning_and_control/controller_modules/include",
+
+        // 个人电脑
         "/home/ikun/real_car_experiment_ros2/src/base_msgs/include/**",
         "/home/ikun/real_car_experiment_ros2/src/controller/include/**",
+        "/home/ikun/real_car_experiment_ros2/src/my_planning_and_control/general_modules/include",
+        "/home/ikun/real_car_experiment_ros2/src/my_planning_and_control/planner_modules/include",
+        "/home/ikun/real_car_experiment_ros2/src/my_planning_and_control/controller_modules/include",
+        "/home/ikun/real_car_experiment_ros2/install/chassis_msgs/include",
+        "/home/ikun/real_car_experiment_ros2/install/control_msgs/include",
         "${workspaceFolder}/**",
         "/usr/include/**",
         "/usr/local/include/**"

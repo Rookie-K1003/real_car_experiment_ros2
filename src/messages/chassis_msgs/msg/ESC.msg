@@ -1,0 +1,2 @@
+float64 esc_wheel_speed_avg
+float64 esc_vehicle_speed

@@ -22,6 +22,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/EHB.msg"
   "msg/EPS.msg"
   "msg/VCU.msg"
+  "msg/ESC.msg"
   "msg/ChassisInfo.msg"
   DEPENDENCIES builtin_interfaces std_msgs
 )

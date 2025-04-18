@@ -20,6 +20,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(location_msgs REQUIRED)
 find_package(control_msgs REQUIRED)
 find_package(chassis_msgs REQUIRED) # 20250416
+find_package(visualization_msgs REQUIRED)
 
 find_package(Threads REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -59,7 +60,9 @@ link_directories(${catkin_LIB_DIRS})
 add_library(canlib src/CanHandler.cc src/CanMsgDefs.cc src/CanCommonFcn.cc)
 
 # Node
-add_executable(esdcan src/main.cc ${HEADERS} ${SOURCES})
+# add_executable(esdcan src/main.cc ${HEADERS} ${SOURCES}) # 包含完整的与底盘CAN通信的功能
+add_executable(esdcan src/main_recv.cc ${HEADERS} ${SOURCES}) # 仅进行CAN接收，不发送，用于数据采集 20250418
+
 ament_target_dependencies(esdcan
     rclcpp
     std_msgs
@@ -67,6 +70,7 @@ ament_target_dependencies(esdcan
     location_msgs
     control_msgs
     chassis_msgs # 20250416
+    visualization_msgs # 20250418
 )
 #target_link_libraries(esdcan ${CMAKE_CURRENT_SOURCE_DIR}/dll/libCanCmd.so ${catkin_LIBRARIES} pthread glog)
 target_link_libraries(esdcan ${catkin_LIBRARIES} libntcan.so pthread glog)

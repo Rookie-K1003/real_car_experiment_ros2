@@ -136,9 +136,10 @@ namespace CanProcess
         if (car)
         {
             double avg_wheel_spd, wheel_spd_fl, wheel_spd_fr;
+            // CAN信号获得的单位时km/h，转换为m/s
             wheel_spd_fl = all_can_recv[0x305].all_double_data["ESC_Wheel_Speed_FL"].data;
             wheel_spd_fr = all_can_recv[0x305].all_double_data["ESC_Wheel_Speed_FR"].data;
-            avg_wheel_spd = (wheel_spd_fl + wheel_spd_fr) * 0.5;
+            avg_wheel_spd = (wheel_spd_fl + wheel_spd_fr) * 0.5 / 3.6; // 单位m/s
             return avg_wheel_spd;          
         }
         else
@@ -151,7 +152,7 @@ namespace CanProcess
     {
         if (car)
         {
-            return all_can_recv[0x305].all_double_data["ESC_Vehicle_Speed"].data;          
+            return all_can_recv[0x305].all_double_data["ESC_Vehicle_Speed"].data / 3.6; // 单位m/s        
         }
         else
         {
