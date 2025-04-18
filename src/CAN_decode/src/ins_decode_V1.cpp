@@ -235,9 +235,9 @@ private:
     double map_x_; // 地图坐标系下X坐标
     double map_y_; // 地图坐标系下Y坐标
     double map_z_; // 地图坐标系下Z坐标
-    double latitude_origin_ = 31.2304; // 地图坐标系原点纬度
-    double longitude_origin_ = 121.4737; // 地图坐标系原点经度
-    double altitude_origin_ = 0.0; // 地图坐标系原点高度
+    double latitude_origin_; // 地图坐标系原点纬度
+    double longitude_origin_; // 地图坐标系原点经度
+    double altitude_origin_; // 地图坐标系原点高度
 
     // 计算、数据转换用到的常量
     const double e = 0.0818191908425;

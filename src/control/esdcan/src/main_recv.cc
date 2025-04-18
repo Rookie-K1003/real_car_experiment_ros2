@@ -15,6 +15,7 @@
 #include <cmath>
 
 using namespace CanProcess;
+using namespace std;
 
 class CanCommanderNode : public rclcpp::Node {
 public:
@@ -56,6 +57,8 @@ private:
      // === Global state ===
     int g_car = 1;  // 1:美团车，0：萌建号
     int channel = 2;
+    double g_CurrentAngle;
+    double g_dt = 0.05;
 
     // === Thread safety ===
     std::mutex g_KeyBoardMutex;
@@ -78,7 +81,7 @@ private:
         // 组织底盘CAN消息并发布
         chassis_msgs::msg::ChassisInfo msg;
         msg.header.stamp = this->get_clock()->now();
-        msg.header.frame_id = "base_link";
+        msg.header.frame_id = "map";
 
         msg.eps.driver_steer_status = getEPSDriverSteerStatus();
         msg.eps.wire_control_drive_enable = getEPSWireControlStatus();
@@ -97,20 +100,23 @@ private:
         msg.esc.esc_vehicle_speed = getESCVelocity(g_car);
 
         pubChassisInfo_->publish(msg);
+
+        // 可视化
+        visualize_chassis_info(msg);
     }
 
     // 可视化函数，将ChassisInfo显示为TextMarker
-    void visualize_chassis_info(const chassis_msgs::msg::ChassisInfo::SharedPtr msg) {
+    void visualize_chassis_info(const chassis_msgs::msg::ChassisInfo& msg) {
         visualization_msgs::msg::Marker chassis_info_marker;
-        chassis_info_marker.header.frame_id = "base_link";  // 使用base_link作为参考坐标系
+        chassis_info_marker.header.frame_id = "map";  // 使用map作为参考坐标系
         chassis_info_marker.header.stamp = this->get_clock()->now();
         chassis_info_marker.ns = "chassis_info";
         chassis_info_marker.id = 0;
         chassis_info_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
 
         // 设置文本显示位置：左上角
-        chassis_info_marker.pose.position.x = 0.0;
-        chassis_info_marker.pose.position.y = 3.0;  // 偏右一些
+        chassis_info_marker.pose.position.x = 6.0;
+        chassis_info_marker.pose.position.y = -5.0;  // 偏右一些
         chassis_info_marker.pose.position.z = 1.0;
         chassis_info_marker.scale.z = 0.5;
         chassis_info_marker.color.a = 1.0;
@@ -120,11 +126,11 @@ private:
 
         // 格式化显示内容
         chassis_info_marker.text = 
-            "Steering Angle: " + to_string(msg->eps.steering_angle) + " deg\n" +
-            "Brake Torque: " + to_string(msg->ehb.brk_trq_act) + " Nm\n" +
-            "Drive Torque: " + to_string(msg->vcu.motor_torque) + " Nm\n" +
-            "Wheel Speed: " + to_string(msg->esc.esc_wheel_speed_avg) + " m/s\n" +
-            "Vehicle Speed: " + to_string(msg->esc.esc_vehicle_speed) + " m/s";
+            "Steering Angle: " + to_string(msg.eps.steering_angle) + " deg\n" +
+            "Brake Torque: " + to_string(msg.ehb.brk_trq_act) + " Nm\n" +
+            "Drive Torque: " + to_string(msg.vcu.motor_torque) + " Nm\n" +
+            "Wheel Speed: " + to_string(msg.esc.esc_wheel_speed_avg) + " m/s\n" +
+            "Vehicle Speed: " + to_string(msg.esc.esc_vehicle_speed) + " m/s";
 
         // 发布显示
         marker_pub_->publish(chassis_info_marker);

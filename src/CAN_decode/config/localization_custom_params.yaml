@@ -1,8 +1,8 @@
 # map原点经纬高
 localization:
-  latitude_origin: 31.2304
-  longitude_origin: 121.4737
-  altitude_origin: 10.0
+  latitude_origin: 31.2915
+  longitude_origin: 121.2086
+  altitude_origin: 13.811
 
 # 自车长宽高，用于可视化
 vehicle:
