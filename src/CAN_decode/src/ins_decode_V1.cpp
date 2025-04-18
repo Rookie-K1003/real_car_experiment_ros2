@@ -14,10 +14,14 @@
 #include <nav_msgs/msg/odometry.hpp>
 #include <sensor_msgs/msg/imu.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
-#include "geometry_msgs/msg/twist_stamped.hpp"
+#include <geometry_msgs/msg/twist_stamped.hpp>
 #include "location_msgs/msg/rtk.hpp"
 #include <ntcan.h>
 #include "lla2map_converter.hpp"
+
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/convert.h>
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 using namespace std;
 
@@ -45,9 +49,6 @@ public:
         this->get_parameter("localization.latitude_origin", latitude_origin_);
         this->get_parameter("localization.longitude_origin", longitude_origin_);
         this->get_parameter("localization.altitude_origin", altitude_origin_);
-
-}
-
 
     }
 
@@ -102,7 +103,6 @@ public:
         geometry_msgs::msg::PoseStamped pose_data;
         nav_msgs::msg::Odometry odom_data;
         sensor_msgs::msg::Imu imu_data;
-        location_msgs::msg::RTK rtk_data;
         geometry_msgs::msg::TwistStamped velocity_data;
 
         // 节点循环接收CAN消息并解析
@@ -112,7 +112,69 @@ public:
             if (ret2 == NTCAN_SUCCESS && frame_num != 0) {
                 // 解析不同CAN ID的消息
                 for (int i = 0; i < frame_num; ++i) {
-                    process_can_message(recv[i]);
+                     if (recv[i].id == 803) {
+                        // INS状态
+                        // 一些系统定位的,暂时先不处理
+                        rtk_data.status = CAN_decode(recv[i], 16, 8, 1, 0, 0); // RTK稳定解定位定向时，正常应当为status4
+                    } else if (recv[i].id == 804) {
+                        // GPS经纬度
+                        latitude_ = CAN_decode(recv[i], 0, 32, 1e-7, 0, 0);
+                        longitude_ = CAN_decode(recv[i], 32, 32, 1e-7, 0, 0);
+                        rtk_data.latitude = latitude_;
+                        rtk_data.longitude = longitude_;            
+                    } else if (recv[i].id == 801) {
+                        // IMU角速度原始值
+                        rtk_data.angrate_raw_x = CAN_decode(recv[i], 0, 20, 1e-2, 0, 1) * torad;
+                        rtk_data.angrate_raw_y = CAN_decode(recv[i], 20, 20, 1e-2, 0, 1) * torad;
+                        rtk_data.angrate_raw_z = CAN_decode(recv[i], 40, 20, 1e-2, 0, 1) * torad;
+
+                    } else if (recv[i].id == 802) {
+                        // IMU加速度原始值
+                        // 处理消息并发布到相应的话题
+                        rtk_data.accel_raw_x = CAN_decode(recv[i], 0, 20, 1e-4, 0, 1) * g;
+                        rtk_data.accel_raw_y = CAN_decode(recv[i], 20, 20, 1e-4, 0, 1) * g;
+                        rtk_data.accel_raw_z = CAN_decode(recv[i], 40, 20, 1e-4, 0, 1) * g;           
+
+                    } else if (recv[i].id == 805) {
+                        // 位置高度信息
+                        altitude_ = CAN_decode(recv[i], 0, 32, 1e-3, 0, 0);
+                        rtk_data.height = altitude_;
+                    } else if (recv[i].id == 806) {
+                        // 位置sigma值（定位误差？）
+
+                    } else if (recv[i].id == 807) {
+                        // 车辆速度
+                        velocity_ = CAN_decode(recv[i], 48, 16, 1e-2, 0, 0); // 需要验证和轮速误差得到车速的误差
+                        rtk_data.velocity = velocity_;
+                    }
+                    else if (recv[i].id == 808) {
+                        // 速度sigma
+                    }
+                    else if (recv[i].id == 809) {
+                        // 车辆坐标系加速度（单位转换为m/s^2）
+                        acc_x_ = CAN_decode(recv[i], 0, 20, 1e-4, 0, 1) * g;
+                        acc_y_ = CAN_decode(recv[i], 20, 20, 1e-4, 0, 1) * g;
+                        acc_z_ = CAN_decode(recv[i], 40, 20, 1e-4, 0, 1) * g;
+                    }
+                    else if (recv[i].id == 810) {
+                        // 姿态角 RPY(单位先用deg)
+                        roll_ = CAN_decode(recv[i], 32, 16, 1e-2, 0, 1);
+                        pitch_ = CAN_decode(recv[i], 16, 16, 1e-2, 0, 1);
+                        yaw_ = CAN_decode(recv[i], 0, 16, 1e-2, 0, 0);
+                        rtk_data.heading = yaw_;
+                        rtk_data.pitch = pitch_;
+                        rtk_data.roll = roll_;
+                    }
+                    else if (recv[i].id == 811) {
+                        // 姿态角sigma
+                    }
+                    else if (recv[i].id == 812) {
+                        // 车辆坐标系角速度(单位转换成rad/s)
+                        angrate_x_ = CAN_decode(recv[i], 0, 20, 1e-2, 0, 1) * torad;
+                        angrate_y_ = CAN_decode(recv[i], 20, 20, 1e-2, 0, 1) * torad;
+                        angrate_z_ = CAN_decode(recv[i], 40, 20, 1e-2, 0, 1) * torad;
+                    }
+                    else {}
                 }
             }
 
@@ -150,6 +212,8 @@ private:
     rclcpp::Publisher<sensor_msgs::msg::Imu>::SharedPtr imu_pub_;
     rclcpp::Publisher<location_msgs::msg::RTK>::SharedPtr rtk_pub_;
     rclcpp::Publisher<geometry_msgs::msg::TwistStamped>::SharedPtr velocity_pub_;
+
+    location_msgs::msg::RTK rtk_data;
     
     LlaToMapConverter converter;  // 类成员变量
     // 其他的一些解析变量
@@ -183,79 +247,6 @@ private:
     double Re = 0;
 
     int timestamp_type_; // 时间戳类型：0-UTC时间，1-GPS时间，2-ROS时间
-
-    /**
-     * @brief 处理CAN消息
-     *
-     * 根据CAN消息的ID，解析不同的数据并赋值给成员变量
-     *
-     * @param msg CAN消息结构体
-     */
-    void process_can_message(CMSG& msg) {
-        if (msg.id == 803) {
-            // INS状态
-            // 一些系统定位的,暂时先不处理
-            rtk_data.status = CAN_decode(recv[i], 16, 8, 1, 0, 0); // RTK稳定解定位定向时，正常应当为status4
-        } else if (msg.id == 804) {
-            // GPS经纬度
-            latitude_ = CAN_decode(msg, 0, 32, 1e-7, 0, 0);
-            longitude_ = CAN_decode(msg, 32, 32, 1e-7, 0, 0);
-            rtk_data.latitude = latitude_;
-            rtk_data.longitude = longitude_;            
-        } else if (msg.id == 801) {
-            // IMU角速度原始值
-            rtk_data.angrate_raw_x = CAN_decode(recv[i], 0, 20, 1e-2, 0, 1) * torad;
-            rtk_data.angrate_raw_y = CAN_decode(recv[i], 20, 20, 1e-2, 0, 1) * torad;
-            rtk_data.angrate_raw_z = CAN_decode(recv[i], 40, 20, 1e-2, 0, 1) * torad;
-
-        } else if (msg.id == 802) {
-            // IMU加速度原始值
-            // 处理消息并发布到相应的话题
-            rtk_data.accel_raw_x = CAN_decode(recv[i], 0, 20, 1e-4, 0, 1) * g;
-            rtk_data.accel_raw_y = CAN_decode(recv[i], 20, 20, 1e-4, 0, 1) * g;
-            rtk_data.accel_raw_z = CAN_decode(recv[i], 40, 20, 1e-4, 0, 1) * g;           
-
-        } else if (msg.id == 805) {
-            // 位置高度信息
-            altitude_ = CAN_decode(msg, 0, 32, 1e-3, 0, 0);
-            rtk_data.height = altitude_;
-        } else if (msg.id == 806) {
-            // 位置sigma值（定位误差？）
-
-        } else if (msg.id == 807) {
-            // 车辆速度
-            velocity_ = CAN_decode(msg, 48, 16, 1e-2, 0, 0); // 需要验证和轮速误差得到车速的误差
-            rtk_data.velocity = velocity_;
-        }
-        else if (msg.id == 808) {
-            // 速度sigma
-        }
-        else if (msg.id == 809) {
-            // 车辆坐标系加速度（单位转换为m/s^2）
-            acc_x_ = CAN_decode(msg, 0, 20, 1e-4, 0, 1) * g;
-            acc_y_ = CAN_decode(msg, 20, 20, 1e-4, 0, 1) * g;
-            acc_z_ = CAN_decode(msg, 40, 20, 1e-4, 0, 1) * g;
-        }
-        else if (msg.id == 810) {
-            // 姿态角 RPY(单位先用deg)
-            roll_ = CAN_decode(msg, 32, 16, 1e-2, 0, 1);
-            pitch_ = CAN_decode(msg, 16, 16, 1e-2, 0, 1);
-            yaw_ = CAN_decode(msg, 0, 16, 1e-2, 0, 0);
-            rtk_data.heading = yaw_;
-            rtk_data.pitch = pitch_;
-            rtk_data.roll = roll_;
-        }
-        else if (msg.id == 811) {
-            // 姿态角sigma
-        }
-        else if (msg.id == 812) {
-            // 车辆坐标系角速度(单位转换成rad/s)
-            angrate_x_ = CAN_decode(msg, 0, 20, 1e-2, 0, 1) * torad;
-            angrate_y_ = CAN_decode(msg, 20, 20, 1e-2, 0, 1) * torad;
-            angrate_z_ = CAN_decode(msg, 40, 20, 1e-2, 0, 1) * torad;
-        }
-        else {}
-    }
 
     /**
      * @brief 从CAN消息中解码出相应的数据
@@ -357,7 +348,9 @@ private:
         pose.pose.position.z = map_z_;
         // 姿态
         // rpy转四元数,注意单位要用弧度制
-        pose.pose.orientation = tf2::createQuaternionMsgFromRollPitchYaw(roll_ * torad, pitch_ * torad, yaw_ * torad);
+        tf2::Quaternion q;
+        q.setRPY(roll_ * torad, pitch_ * torad, yaw_ * torad);
+        pose.pose.orientation = tf2::toMsg(q);
         
         // 发布话题
         pose_pub_->publish(pose);
@@ -375,7 +368,10 @@ private:
         odom.pose.pose.position.z = map_z_;
         // 姿态
         // rpy转四元数,注意单位要用弧度制
-        odom.pose.pose.orientation = tf2::createQuaternionMsgFromRollPitchYaw(roll_ * torad, pitch_ * torad, yaw_ * torad);
+        tf2::Quaternion q;
+        q.setRPY(roll_ * torad, pitch_ * torad, yaw_ * torad);
+        odom.pose.pose.orientation = tf2::toMsg(q);
+
         // 速度
         odom.twist.twist.linear.x = velocity_;
         odom.twist.twist.linear.y = 0;
@@ -395,7 +391,10 @@ private:
 
         // 姿态
         // rpy转四元数,注意单位要用弧度制
-        imu.orientation = tf2::createQuaternionMsgFromRollPitchYaw(roll_ * torad, pitch_ * torad, yaw_ * torad);
+        tf2::Quaternion q;
+        q.setRPY(roll_ * torad, pitch_ * torad, yaw_ * torad);
+        imu.orientation = tf2::toMsg(q);
+        
         // 角速度
         imu.angular_velocity.x = angrate_x_;
         imu.angular_velocity.y = angrate_y_;
@@ -411,23 +410,22 @@ private:
     void publish_rtk(location_msgs::msg::RTK rtk)
     {
         // 时间戳、坐标系
-        rtk.header.stamp = rclcpp::Clock().now();
-        rtk.header.frame_id = "map";
+        rtk.stamp = rclcpp::Clock().now();
         // 解析CAN报文时就赋值了，直接发布
         rtk_pub_->publish(rtk);
     }
-    void publish_velocity(geometry_msgs::msg::Twist twist)
+    void publish_velocity(geometry_msgs::msg::TwistStamped twist)
     {
         // 时间戳、坐标系
         twist.header.stamp = rclcpp::Clock().now();
         twist.header.frame_id = "base_link";
         // 速度
-        twist.linear.x = velocity_;
-        twist.linear.y = 0;
-        twist.linear.z = 0;
-        twist.angular.x = angrate_x_;
-        twist.angular.y = angrate_y_;
-        twist.angular.z = angrate_z_;
+        twist.twist.linear.x = velocity_;
+        twist.twist.linear.y = 0;
+        twist.twist.linear.z = 0;
+        twist.twist.angular.x = angrate_x_;
+        twist.twist.angular.y = angrate_y_;
+        twist.twist.angular.z = angrate_z_;
         // 发布话题
         velocity_pub_->publish(twist);
     }

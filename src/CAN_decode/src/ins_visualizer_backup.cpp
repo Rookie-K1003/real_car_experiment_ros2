@@ -63,9 +63,6 @@ private:
         // 发布带 _rviz 后缀的可视化话题
         nav_msgs::msg::Odometry odom_rviz = *msg;
         odom_rviz_pub_->publish(odom_rviz);
-
-        // 更新车辆实时信息
-        update_vehicle_info(msg);
     }
 
     void imu_callback(const sensor_msgs::msg::Imu::SharedPtr msg) {
@@ -121,43 +118,10 @@ private:
         rtk_marker.pose.position.z = map_z_;
         rtk_marker.scale.z = 0.5;
         rtk_marker.color.a = 1.0;
-        rtk_marker.color.r = 1.0;  // 设置白色
-        rtk_marker.color.g = 1.0;
-        rtk_marker.color.b = 1.0;  // 设置白色
+        rtk_marker.color.b = 1.0;
         rtk_marker.text = "Lat: " + to_string(msg->latitude) + " Lon: " + to_string(msg->longitude) + 
                           " RTK Status: " + to_string(msg->status);
         marker_pub_->publish(rtk_marker);
-    }
-
-    // 更新显示车辆实时信息
-    void update_vehicle_info(const nav_msgs::msg::Odometry::SharedPtr msg) {
-        visualization_msgs::msg::Marker vehicle_info_marker;
-        vehicle_info_marker.header.frame_id = "map";
-        vehicle_info_marker.header.stamp = this->get_clock()->now();
-        vehicle_info_marker.ns = "vehicle_info";
-        vehicle_info_marker.id = 2;
-        vehicle_info_marker.type = visualization_msgs::msg::Marker::TEXT_VIEW_FACING;
-
-        // 设置文本显示位置：左上角
-        vehicle_info_marker.pose.position.x = 3.0;
-        vehicle_info_marker.pose.position.y = 3.0;  // 位置略偏右侧
-        vehicle_info_marker.pose.position.z = 1.0;
-        vehicle_info_marker.scale.z = 0.5;
-        vehicle_info_marker.color.a = 1.0;
-        vehicle_info_marker.color.r = 1.0;  // 白色
-        vehicle_info_marker.color.g = 1.0;
-        vehicle_info_marker.color.b = 1.0;  // 设置为白色
-
-        // 拼接文本内容：显示速度、角速度、加速度等
-        vehicle_info_marker.text = 
-            "X Vel: " + to_string(msg->twist.twist.linear.x) + " m/s\n" +
-            "Z Ang Vel: " + to_string(msg->twist.twist.angular.z) + " rad/s\n" +
-            "X Acc: " + to_string(acc_x_) + " m/s^2\n" +
-            "Y Acc: " + to_string(acc_y_) + " m/s^2\n" +
-            "Yaw (Heading): " + to_string(yaw_) + " deg";
-
-        // 发布显示
-        marker_pub_->publish(vehicle_info_marker);
     }
 
     // 更新轨迹
@@ -186,8 +150,6 @@ private:
 
     double length_, width_, height_;  // 车辆长宽高
     double map_x_, map_y_, map_z_;    // 地图坐标
-    double acc_x_, acc_y_;             // 加速度
-    double yaw_;                       // 航向角
     nav_msgs::msg::Path path_;         // 用于存储轨迹
 };
 

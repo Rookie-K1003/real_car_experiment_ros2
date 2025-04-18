@@ -7,8 +7,7 @@ from launch.actions import DeclareLaunchArgument, LogInfo  # 添加日志输出�
 
 def generate_launch_description():     # 自动生成launch文件的函数
     # 获取功能包路径
-    package_share_directory = get_package_share_directory('can_decode')  # 获取can_decode功能包路径
-
+    rviz_config_path = '/home/vecow/real_car_experiment_ros2/src/CAN_decode/rviz/localizer_vis.rviz'
     return LaunchDescription([                  # 返回launch文件的描述信息
         # 启动自车定位解析节点
         Node(                                   # 配置一个节点的启动
@@ -17,7 +16,7 @@ def generate_launch_description():     # 自动生成launch文件的函数
             name='can_decode',                # 对节点重新命名
             output='screen',
             parameters=[{
-                'localization_custom_params.yaml': os.path.join(package_share_directory, 'config', 'localization_custom_params.yaml')
+                'localization_custom_params.yaml': '/home/vecow/real_car_experiment_ros2/src/CAN_decode/config/localization_custom_params.yaml'
             }]
         ),
 
@@ -28,7 +27,7 @@ def generate_launch_description():     # 自动生成launch文件的函数
             name='ins_visualizer',  # 节点名称
             output='screen',
             parameters=[{
-                'localization_custom_params.yaml': os.path.join(package_share_directory, 'config', 'localization_custom_params.yaml')
+                'localization_custom_params.yaml': '/home/vecow/real_car_experiment_ros2/src/CAN_decode/config/localization_custom_params.yaml'
             }]
         ),
 
@@ -38,6 +37,6 @@ def generate_launch_description():     # 自动生成launch文件的函数
             executable='rviz2',
             name='rviz2',
             output='screen',
-            arguments=['-d', os.path.join(package_share_directory, 'rviz', 'localizer_vis.rviz')]
+            arguments=['-d', rviz_config_path]
         )
     ])

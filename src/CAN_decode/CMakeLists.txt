@@ -19,8 +19,12 @@ find_package(std_msgs REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(location_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 #find_package(message_generation REQUIRED)
 find_package(ament_index_cpp REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 find_package(Eigen3 REQUIRED)
 include_directories(
@@ -65,6 +69,9 @@ ament_target_dependencies(can_decode
     nav_msgs
     geometry_msgs
     location_msgs
+    sensor_msgs
+    tf2
+    tf2_geometry_msgs
 )
 
 ament_target_dependencies(ins_visualizer
@@ -73,6 +80,9 @@ ament_target_dependencies(ins_visualizer
     nav_msgs
     geometry_msgs
     location_msgs
+    sensor_msgs
+    tf2_geometry_msgs
+    visualization_msgs
 )
 
 target_link_libraries(can_decode
