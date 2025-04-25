@@ -47,7 +47,7 @@ link_directories(${catkin_LIB_DIRS})
 
 # CAN解析节点
 add_executable(can_decode
-    src/ins_decode_V1.cpp)
+    src/ins_decode_V2.cpp)
 
 # 可视化节点
 add_executable(ins_visualizer

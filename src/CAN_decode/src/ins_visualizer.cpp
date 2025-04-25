@@ -6,6 +6,9 @@
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include "location_msgs/msg/rtk.hpp"
 #include <nav_msgs/msg/path.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/convert.h>
+#include "tf2_geometry_msgs/tf2_geometry_msgs.h"
 
 using namespace std;
 
@@ -46,6 +49,7 @@ public:
     }
 
 private:
+    const double toDeg = 180.0 / M_PI;
     // 订阅回调函数
     void pose_callback(const geometry_msgs::msg::PoseStamped::SharedPtr msg) {
         // 发布带 _rviz 后缀的可视化话题
@@ -148,13 +152,19 @@ private:
         vehicle_info_marker.color.g = 1.0;
         vehicle_info_marker.color.b = 1.0;  // 设置为白色
 
+        // 从四元数获得航向角
+        double roll, pitch, yaw;
+        tf2::Quaternion quat(msg->pose.pose.orientation.x, 
+                             msg->pose.pose.orientation.y, 
+                             msg->pose.pose.orientation.z, 
+                             msg->pose.pose.orientation.w);
+        tf2::Matrix3x3 mat(quat);
+        mat.getRPY(roll, pitch, yaw);
         // 拼接文本内容：显示速度、角速度、加速度等
         vehicle_info_marker.text = 
             "X Vel: " + to_string(msg->twist.twist.linear.x) + " m/s\n" +
             "Z Ang Vel: " + to_string(msg->twist.twist.angular.z) + " rad/s\n" +
-            "X Acc: " + to_string(acc_x_) + " m/s^2\n" +
-            "Y Acc: " + to_string(acc_y_) + " m/s^2\n" +
-            "Yaw (Heading): " + to_string(yaw_) + " deg";
+            "Yaw (Heading): " + to_string(yaw * toDeg) + " deg";
 
         // 发布显示
         marker_pub_->publish(vehicle_info_marker);
